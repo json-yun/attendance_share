@@ -1,0 +1,203 @@
+<!Doctype html>
+<html lang="ko">
+
+{% include 'head.html'%}
+
+<script>
+    function onlyFavorite() {
+        $("#panel-tab-all").removeClass("is-active");
+        $("#panel-tab-favorite").addClass("is-active");
+        $(".list-notfavorite").hide();
+    }
+    function showAll() {
+        $("#panel-tab-all").addClass("is-active");
+        $("#panel-tab-favorite").removeClass("is-active");
+        $(".list-notfavorite").show();
+    }
+    function goingout() {
+        $.ajax({
+            type: "POST",
+            url: "/goingout",
+            data: {
+                "reason": $("#reason").val()
+            },
+            success: function (response) {
+                // 요청이 성공하면 페이지를 새로고침
+                location.reload();
+            },
+        })
+    }
+
+</script>
+
+<body>
+    <div class="wrap">
+        <nav class="breadcrumb is-right mt-4" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="/" aria-current="page">홈</a></li>
+                <li><a href="/rank">이번주 순위</a></li>
+                <li><a href="/logout">로그아웃</a></li>
+            </ul>
+        </nav>
+
+        <div class="block" id="myinfo">
+            <div class="box">
+                <div class="is-flex" style="justify-content: center;">
+                    <div class="title">
+                        {{name}}({{generation}}기)</div>
+                    {% if status=="goingout" %}
+                    <div class="title mx-auto has-text-warning">외출</div>
+                    {% elif status=="checkout" %}
+                    <div class="title mx-auto has-text-danger">퇴실</div>
+                    {% elif status=="checkin" %}
+                    <div class="title mx-auto has-text-success">입실</div>
+                    {% else %}
+                    <div class="title mx-auto">오류</div>
+                    {% endif %}
+                </div>
+                <nav class="level">
+                    <div class="level-item has-text-centered">
+                        <div>
+                            <p class="heading">입실 시간</p>
+                            <p class="title">{{checkin_time}}</p>
+                        </div>
+                    </div>
+                    <div class="level-item has-text-centered">
+                        <div>
+                            <p class="heading">퇴실 시간</p>
+                            <p class="title">{{checkout_time}}</p>
+                        </div>
+                    </div>
+                </nav>
+                <nav class="level">
+                    <div class="level-item has-text-centered mb-1">
+                        <div>
+                            <p class="heading">이번주 공부시간</p>
+                            <p class="title">{{studytime}}</p>
+                        </div>
+                    </div>
+                    <div class="level-item has-text-centered mb-1">
+                        <div>
+                            <p class="heading">오늘의 추천 공부시간</p>
+                            <p class="title">{{recommend_hour}}</p>
+                        </div>
+                    </div>
+                    <div class="level-item has-text-centered {{'mb-1' if show_goaltime!='1'}}">
+                        <div>
+                            {% if show_goaltime=='1' %}
+                            <p class="heading">이번주 목표시간 <a class="fas fa-cog has-text-grey" href="?show_goaltime=0"></a>
+                            </p>
+                            <form action="/set_goaltime" method="POST">
+                                <input class="input m-auto" type="number" pattern="[0-9]*" name="goaltime"
+                                    value="{{goaltime}}" required style="width: 4rem;">
+                                <button class="button" type="submit" style="width: 2.5rem;">저장</button>
+                            </form>
+                            {% else %}
+                            <p class="heading">이번주 목표시간 <a class="fas fa-cog has-text-grey" href="?show_goaltime=1"></a>
+                            </p>
+                            <p class="title">{{goaltime}}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </nav>
+                <div class="mb-2">
+                    <input class="input mb-2" id="reason" type="text"
+                        placeholder='{{ "외출 사유를 입력하세요" if not reason else reason}}' {{"" if status=="checkin" and
+                        in_classroom else "disabled" }} />
+                </div>
+                <div class="columns pt-1 pb-0 mb-0">
+                    <div class="column has-text-centered py-2">
+                        {% if status=="checkout" %}
+                        <form method="post" action="{{ url_for('checkin') }}">
+                            <button type="submit" class="button is-primary" style="width: 100%;" {{"" if in_classroom
+                                else "disabled" }}>입실</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{{ url_for('checkout') }}">
+                            <button type="submit" class="button is-danger" style="width: 100%;" {{"" if
+                                status=="checkin" and in_classroom else "disabled" }}>퇴실</button>
+                        </form>
+                        {% endif %}
+                        <p class="help is-danger my-0">{{response_check}}</p>
+                    </div>
+                    <div class="column has-text-centered py-2">
+                        <form method="post" action="{{ url_for('checkin') }}">
+                            <button type="submit" class="button is-info" style="width: 100%;" {{"" if status=="checkin"
+                                and in_classroom else "disabled" }}>연장</button>
+                            </form>
+                            <p class="help is-danger my-0">{{response_extend}}</p>
+                    </div>
+                    <div class="column has-text-centered py-2">
+                        <button type="button" class="button is-warning" style="width: 100%;" onclick="goingout()" {{""
+                            if status in ["checkin", "goingout" ] and in_classroom else "disabled" }}>
+                            {% if status=="goingout" %}
+                            외출종료
+                            {% else %}
+                            외출
+                            {% endif %}
+                        </button>
+                        <p class="help is-danger my-0">{{response_goingout}}</p>
+                    </div>
+                </div>
+                <p class="help is-link my-0">{{server_message}}{{notification}}</p>
+            </div>
+        </div>
+        <article class="panel mb-5">
+            <p class="panel-heading has-background-white-light has-background-dark-dark has-text-right pt-2 pb-1">
+                <span class="is-size-6 has-text-success ml-2"><i class="fas fa-circle has-text-success is-size-7"></i> 입실 </span>
+                <span class="is-size-6 has-text-warning ml-2"><i class="fas fa-circle has-text-warning is-size-7"></i> 외출 </span>
+                <span class="is-size-6 has-text-danger ml-2"><i class="fas fa-circle has-text-danger is-size-7"></i> 퇴실 </span>
+            </p>
+            <p class="panel-tabs custom-panel-tabs">
+                <a class="is-active" id="panel-tab-all" onclick="showAll()">전체</a>
+                <a id="panel-tab-favorite" onclick="onlyFavorite()">즐겨찾기</a>
+            </p>
+            {% for user in userlist %}
+            {% if user["id"] in favorite %}
+            <!-- 항상 보여줌 -->
+            <div class="panel-block list-favorite is-warning">
+                <span class="panel-icon">
+                    <form action="/favorite_back" method="POST" style="display:inline;">
+                        <input type="hidden" name="userId" value="{{ user['id'] }}">
+                        <button type="submit" class="fas fa-star has-text-warning" aria-hidden="true"
+                            id="{{ user['id'] }}"></button>
+                    </form>
+                </span>
+                {% else %}
+                <!-- 즐겨찾기 체크 안 된 것은 즐겨찾기 탭인경우 가림 -->
+                <div class="panel-block list-notfavorite">
+                    <span class="panel-icon">
+                        <form action="/favorite" method="POST" style="display:inline;">
+                            <input type="hidden" name="userId" value="{{ user['id'] }}">
+                            <button type="submit" class="far fa-star has-text-warning" aria-hidden="true"
+                                id="{{ user['id'] }}"></button>
+                        </form>
+                    </span>
+                    {% endif %}
+                    <span>{{user["name"]}}
+                        {% for i in range(user["medals"] if "medals" in user and user["medals"] else 0) %}
+                        <i class="fas fa-medal is-right"></i>
+                        {% endfor %}
+                        {% if user["reason"] %}
+                        <br>
+                        <span class="has-text-grey">
+                            {{user["reason"]}}
+                        </span>
+                        {% endif %}
+                    </span>
+                    <span class="time-text" style="margin-left: auto;">
+                        {% if user["goingout_time"] %}
+                        <i class="fas fa-circle has-text-warning is-size-7" title="외출"></i>
+                        {% elif user['checkin_time'] and not user['checkout_time'] %}
+                        <i class="fas fa-circle has-text-success is-size-7" title="입실"></i>
+                        {% else %}
+                        <i class="fas fa-circle has-text-danger is-size-7" title="퇴실"></i>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+        </article>
+    </div>
+</body>
+
+</html>

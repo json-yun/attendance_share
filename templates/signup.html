@@ -1,0 +1,63 @@
+<!Doctype html>
+<html lang="ko">
+    
+    {% include 'head.html'%}
+    <body>
+        <div class="wrap my-4 py-4">
+            <h1 class="title" style="text-align: center;">회원가입</h1>
+            <form class="box" action="/signup_post" method="post">
+                
+                <label class="label my-2">기수</label>
+                <div class="control mb-3" required>
+                    <div class="select">
+                        <select name="generation">
+                            <option disabled>당신은 몇기?</option>
+                            <option value="6">6기</option>
+                            <option value="5">5기</option>
+                            <option value="4">4기</option>
+                            <option value="3">3기</option>
+                            <option value="2">2기</option>
+                            <option value="1">1기</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">아이디</label>
+                    <div class="control has-icons-left has-icons-right">
+                      <input class="input" type="text" placeholder="" name = "userid" required>
+                      <span class="icon is-small is-left">
+                        <i class="fas fa-user"></i>
+                      </span>
+                    </div>
+                    <p class="help is-danger">{{error_id}}</p>
+                </div>
+                <div class="field">
+                    <label class="label">비밀번호</label>
+                    <div class="control has-icons-left has-icons-right">
+                        <input class="input" type="password" placeholder="" name = "password" required>
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                    </div>
+                    <p class="help is-danger">{{error_password}}</p>
+                  </div>
+
+                <div class="field">
+                    <label class="label">이름</label>
+                    <div class="control has-icons-left has-icons-right">
+                      <input class="input" type="text" placeholder="" name="name" required>
+                      <span class="icon is-small is-left">
+                        <i class="fas fa-id-card"></i>
+                      </span>
+                    </div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button type="submit" class="button is-link my-3">회원가입</button>
+                    <br>
+                    <a class="is-link" onclick="window.location.href = '/'">돌아가기</a>
+                </div>
+            </form>
+        </div>
+</body>
+</html>

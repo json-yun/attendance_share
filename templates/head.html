@@ -1,0 +1,105 @@
+<!--head.html-->
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+    
+    <!-- JQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+        integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+        crossorigin="anonymous"></script>
+
+    <!-- JQuery를 import 합니다 -->
+    <!-- ajax를 사용하려면 얘가 있어야 함.-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- 구글폰트 -->
+    <!-- <link href="https://fonts.googleapis.com/css?family=Stylish&display=swap" rel="stylesheet"> -->
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+
+    <title>동기야 어딨어</title>
+
+    <!-- style -->
+    <style type="text/css">
+        * {
+            font-family: "Pretendard Variable", sans-serif;
+        }
+
+        .wrap {
+            width: 90%;
+            max-width: 30rem;
+            margin: auto;
+        }
+    </style>
+
+    <script>
+        // Function to calculate the distance between two coordinates using Haversine formula
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of the Earth in km
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const d = R * c; // Distance in km
+            return d;
+        }
+
+        function deg2rad(deg) {
+            return deg * (Math.PI / 180);
+        }
+
+        function function2() {
+            document.getElementById('status').innerText = 'Within 1km radius: Function 2 executed!';
+        }
+
+        function checkLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    const targetLatitude = 37.300197;
+                    const targetLongitude = 127.033489;
+                    console.log(latitude, longitude);
+                    const distance = getDistanceFromLatLonInKm(latitude, longitude, targetLatitude, targetLongitude) * 1000;
+
+                    document.getElementById('status').innerText = `${latitude}, ${longitude} \n ${distance.toFixed(2)}m 떨어짐`;
+
+                    fetch('https://yourdomain.com/distance', { // Ensure you use HTTPS here
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ latitude, longitude }),
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('distance').innerText = `Distance to target: ${data.distance.toFixed(2)} m`;
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            document.getElementById('distance').innerText = 'Error calculating distance.';
+                        });
+                }, error => {
+                    document.getElementById('status').innerText = 'Unable to retrieve location.';
+                });
+            } else {
+                document.getElementById('status').innerText = 'Geolocation is not supported by this browser.';
+            }
+        }
+    </script>
+</head>

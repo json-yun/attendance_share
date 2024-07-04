@@ -1,0 +1,49 @@
+<!Doctype html>
+<html lang="ko">
+
+{% include 'head.html'%}
+
+<body>
+    <div class="wrap">
+    <nav class="breadcrumb is-right mt-4" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="/" aria-current="page">홈</a></li>
+            <li><a href="/rank">이번주 순위</a></li>
+            <li><a href="/logout">로그아웃</a></li>
+        </ul>
+    </nav>
+    <div class="custom-container mb-4">
+        <h1 class="title" style="text-align: center;">이주의 TOP10</h1>
+    </div>
+    <article class="panel">
+    {% if rank_list %}
+    {% for user in rank_list %}
+            <div class="panel-block custom-panel-block">
+                <span>
+                    <span class="panel-icon">
+                        {% if loop.index0 == 0 %}
+                        <i class="fas fa-medal is-size-4" aria-hidden="true" style="color: gold;"></i>
+                        {% elif loop.index0 == 1 %}
+                        <i class="fas fa-medal is-size-4" aria-hidden="true" style="color: silver;"></i>
+                        {% elif loop.index0 == 2 %}
+                        <i class="fas fa-medal is-size-4" aria-hidden="true" style="color: #cd7f32;"></i>
+                        {% else %}
+                        <i class="far fa-user-circle is-size-4" aria-hidden="true"></i>
+                        {% endif %}
+                    </span>
+                    {{user["name"]}}
+                    {% for i in range(user["medals"] if "medals" in user and user["medals"] else 0) %}
+                        <i class="fas fa-medal is-right"></i>
+                        {% endfor %}
+                </span>
+                <span class="time-text" style="margin-left: auto;">
+                    {{user["studytime"]}}시간
+                </span>
+            </div>
+    {% endfor %}
+    {% endif %}
+    </article>
+</div>
+</body>
+
+</html>
