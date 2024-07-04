@@ -63,7 +63,7 @@ def login():
     if user["password"] == password:
         token = issue_token(id)
         response = make_response(redirect(url_for('home')))
-        response.set_cookie("mytoken", token)
+        response.set_cookie("mytoken", token, httponly=True)
         return response
     else:
         return render_template("index.html", invalid_password="비밀번호가 다릅니다.")
