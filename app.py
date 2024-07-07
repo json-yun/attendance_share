@@ -11,19 +11,18 @@ import time
 import re
 from config import Config
 
-client = MongoClient('localhost', 27017)
-client = MongoClient('mongodb://user:password@ipaddress/?authSource=admin', 27017)
+client = MongoClient('mongodb://user:password@ip_address/?authSource=admin', port)
 db = client.dbjungle
 app = Flask(__name__)
 app.config.from_object(Config)
 SECRET_KEY = app.config['SECRET_KEY']
 app.secret_key = SECRET_KEY
-CLASSROOM_IP = ["59.18.202.172", "175.195.226.193", "168.126.208.153", "125.130.201.152", "192.168.1.42"]
+CLASSROOM_IP = [IPs]
 MAX_STUDYTIME = 3*3600 # seconds
 server_time_global = datetime.datetime.now(datetime.UTC)
-server_time_kst_global = server_time_global + datetime.timedelta(hours=9)
-server_time_kst_day = server_time_kst_global.day
-server_time_kst_week = server_time_kst_global.isocalendar().week
+server_time_timezone4_global = server_time_global + datetime.timedelta(hours=4)
+server_time_timezone4_day = server_time_timezone4_global.day
+server_time_timezone4_week = server_time_timezone4_global.isocalendar().week
 
 # sha256으로 해시
 def hash_password(password):
@@ -63,7 +62,7 @@ def login():
     if user["password"] == password:
         token = issue_token(id)
         response = make_response(redirect(url_for('home')))
-        response.set_cookie("mytoken", token, httponly=True)
+        response.set_cookie("mytoken", token)
         return response
     else:
         return render_template("index.html", invalid_password="비밀번호가 다릅니다.")
@@ -117,7 +116,8 @@ def signup_post():
             "medals" : 0,
             "goingout_time" : 0,
             "goingout_duration" : 0,
-            "goaltime": 0.
+            "goaltime": 0,
+            "studytime_today": 0
             }
     
     db.users.insert_one(user)
@@ -173,8 +173,10 @@ def home():
             goaltime = 0
     except:
         goaltime = 0
-    day_left = 7 - server_time_kst_global.weekday()
-    recommend_hour = round(goaltime / day_left)
+    day_left = 7 - server_time_timezone4_global.weekday()
+    studytime_today = user["studytime_today"]
+    time_left = (goaltime-studytime+studytime_today) /3600
+    recommend_hour = round(time_left / day_left, 1)
     if not favorite:
         favorite = []
     if not studytime:
@@ -268,6 +270,8 @@ def checkin():
     token = request.cookies.get("mytoken")
     user = authorization(token)
     status = check_status(user)
+    if user is None:
+        return redirect(url_for("loginpage"))
     
     # 강의실ip가 아닌 경우
     if not in_classroom(user_ip):
@@ -323,8 +327,11 @@ def update_studytime(now: datetime.datetime, user):
                 studytime_before = user["studytime"]
             else:
                 studytime_before = 0
+            studytime_today_before = user["studytime_today"]
             studytime_new = studytime_before + studytime
-            db.users.update_one({"id": user["id"]}, {"$set": {"studytime": studytime_new}})
+            studytime_today_new = studytime_today_before + studytime
+            db.users.update_one({"id": user["id"]}, {"$set": {"studytime": studytime_new,
+                                                              "studytime_today": studytime_today_new}})
             return "success", round(studytime/3600, 3), round(goingout_time/3600, 3)
         else:
             return "exceeded", -1, 0
@@ -488,6 +495,10 @@ def hide_goaltime():
 
 if __name__ == "__main__":
     def dbmanager(stop_event):
+        def _daily_task(all_users):
+            # 오늘의 공부시간 0으로 변경
+            db.users.update_many({}, {"$set": {"studytime_today": 0}})
+            print("weekly task done at", server_time_global, "utc")
         def _minute_task(all_users):
             # 매 분 3시간 초과한 사람 파악
             for u in all_users:
@@ -498,7 +509,7 @@ if __name__ == "__main__":
                     duration -= u["goingout_duration"] # 외출시간을 뺀 시간으로 계산
                     if duration > MAX_STUDYTIME:
                         update_studytime(server_time_global, u)
-            print("minute task done at", server_time_kst_global, "kst")
+            print("minute task done at", server_time_global, "utc")
         def _weekly_task(all_users):
             # 메달 수여
             generations = []
@@ -521,32 +532,32 @@ if __name__ == "__main__":
                     db.users.update_one({"id": id}, {"$set": {"medals": medals_old+1}})
             # 공부시간 0으로 변경
             db.users.update_many({}, {"$set": {"studytime": 0}})
-            print("weekly task done at", server_time_kst_global, "kst")
+            print("weekly task done at", server_time_global, "utc")
                     
         while True:
             if stop_event.is_set():
                 break
             global server_time_global
-            global server_time_kst_global
-            global server_time_kst_day
-            global server_time_kst_week
+            global server_time_timezone4_global
+            global server_time_timezone4_day
+            global server_time_timezone4_week
             all_users = [defaultdict(float, u) for u in db.users.find({}, {"_id": False})]
             # 매분 작업 수행
             # 시간 갱신
             now = datetime.datetime.now(datetime.UTC)
-            now_kst = now + datetime.timedelta(hours=9)
+            now_timezone4 = now + datetime.timedelta(hours=9)
             server_time_global = now
-            server_time_kst_global = now_kst
-            now_day = now_kst.day
-            now_week = now_kst.isocalendar().week
-            if now_day != server_time_kst_day:
-                # 일자변경 시행
-                server_time_kst_day = now_day
-                # _daily_task(all_users)
-            if now_week != server_time_kst_week:
+            server_time_timezone4_global = now_timezone4
+            now_day = now_timezone4.day
+            now_week = now_timezone4.isocalendar().week
+            if now_week != server_time_timezone4_week:
                 # 주차변경 시행
-                server_time_kst_week = now_week
+                server_time_timezone4_week = now_week
                 _weekly_task(all_users)
+            if now_day != server_time_timezone4_day:
+                # 일자변경 시행
+                server_time_timezone4_day = now_day
+                _daily_task(all_users)
                 
             _minute_task(all_users)
             time.sleep(60)
