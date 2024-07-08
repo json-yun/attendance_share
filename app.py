@@ -175,7 +175,7 @@ def home():
         goaltime = 0
     day_left = 7 - server_time_timezone4_global.weekday()
     studytime_today = user["studytime_today"]
-    time_left = (goaltime-studytime+studytime_today) /3600
+    time_left = (goaltime*3600-studytime+studytime_today) / 3600
     recommend_hour = round(time_left / day_left, 1)
     if not favorite:
         favorite = []
@@ -200,6 +200,7 @@ def home():
                             goingout_time=goingout_time,
                             userlist=userlist,
                             studytime=round(studytime/3600, 1),
+                            studytime_today=round(studytime_today/3600, 1),
                             in_classroom=in_classroom(user_ip),
                             medals=medals,
                             status=status,
@@ -303,7 +304,7 @@ def checkin():
                                                       "checkout_time": ""}})
     return response
 
-def update_studytime(now: datetime.datetime, user):
+def update_studytime(now: datetime.datetime, user :defaultdict):
     if "checkin_time" in user:
         checkin_time = user["checkin_time"]
         goingout_time = user["goingout_duration"]
@@ -545,7 +546,7 @@ if __name__ == "__main__":
             # 매분 작업 수행
             # 시간 갱신
             now = datetime.datetime.now(datetime.UTC)
-            now_timezone4 = now + datetime.timedelta(hours=9)
+            now_timezone4 = now + datetime.timedelta(hours=4)
             server_time_global = now
             server_time_timezone4_global = now_timezone4
             now_day = now_timezone4.day
